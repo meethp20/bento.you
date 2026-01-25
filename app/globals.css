@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
 
 :root {
   --background: #ffffff;
@@ -23,4 +25,68 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* React Grid Layout Customization */
+.react-grid-item {
+    transition: all 200ms ease;
+    transition-property: left, top, width, height;
+}
+
+/* 
+   CRITICAL: When dragging, we must disable transitions on the item itself 
+   so it follows the mouse 1:1 without lag.
+*/
+.react-grid-item.react-grid-placeholder {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-radius: 24px !important;
+    opacity: 0.5 !important;
+    border: 2px dashed rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.dark .react-grid-item.react-grid-placeholder {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255,255,255,0.1);
+}
+
+.react-grid-item.resizing {
+    z-index: 1000 !important;
+    will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+    transition: none !important;
+    z-index: 9999 !important; /* Ensure it's on TOP of everything */
+    will-change: transform;
+    cursor: grabbing !important;
+    
+    /* 
+       DO NOT ADD transform: scale() HERE! 
+       It overrides the inline style 'transform: translate(...)' set by React-Grid-Layout,
+       causing the item to stop moving visually or jump to 0,0.
+    */
+}
+
+/* Apply popup effect to the Inner Child instead */
+.react-grid-item.react-draggable-dragging > div {
+    transform: scale(1.05);
+    box-shadow: 0 25px 30px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    opacity: 0.98;
+}
+
+/* Container needs to allow overflow for the pop controls to be visible */
+.react-grid-layout {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure the resize controls are always on top */
+.resize-controls {
+    z-index: 9999 !important;
+}
+
+.react-resizable-handle {
+    opacity: 0;
 }
