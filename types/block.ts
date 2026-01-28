@@ -4,7 +4,9 @@ export type BlockType =
   | "image"
   | "text"
   | "link"
-  | "heading";
+  | "heading"
+  | "youtube"
+  | "cal";
 
 export interface BlockData {
   title?: string;
@@ -19,6 +21,7 @@ export interface BlockData {
     | "linkedin"
     | "youtube"
     | "spotify"
+    | "cal"
     | "generic";
   text?: string;
   location?: string;

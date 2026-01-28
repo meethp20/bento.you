@@ -5,6 +5,9 @@ import ImageBlock from './ImageBlock';
 import TextBlock from './TextBlock';
 import MapBlock from './MapBlock';
 import HeadingBlock from './HeadingBlock';
+import YouTubeBlock from './YouTubeBlock';
+import CalBlock from './CalBlock';
+import QuoteBlock from './QuoteBlock';
 
 
 interface BlockRendererProps {
@@ -24,6 +27,13 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAddClick }) => {
             return <HeadingBlock block={block} />;
         case 'map':
             return <MapBlock block={block} />;
+        case 'youtube':
+            return <YouTubeBlock block={block} />;
+        case 'cal':
+            return <CalBlock block={block} />;
+        case 'quote':
+            return <QuoteBlock block={block} />;
+
 
         default:
             return (

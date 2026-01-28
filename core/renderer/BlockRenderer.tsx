@@ -1,5 +1,6 @@
 import React from 'react';
-import { Block } from '@/types/block';
+import { Block } from '@/core/types/block';
+
 import SocialBlock from '@/components/blocks/SocialBlock';
 import ImageBlock from '@/components/blocks/ImageBlock';
 import TextBlock from '@/components/blocks/TextBlock';

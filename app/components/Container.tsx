@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
-import { Block } from '@/types/block';
+import { Block } from '@/core/types/block';
+
 import BlockRenderer from '@/components/blocks/BlockRenderer';
 import WidthProvider from '@/components/layout/WidthProvider';
 import { X, LayoutTemplate, Square, LayoutGrid, Maximize, GripHorizontal } from 'lucide-react';

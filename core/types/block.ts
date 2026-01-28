@@ -4,7 +4,10 @@ export type BlockType =
   | "image"
   | "text"
   | "link"
-  | "heading";
+  | "heading"
+  | "youtube"
+  | "cal"
+  | "quote";
 
 export interface BlockData {
   title?: string;
@@ -19,6 +22,7 @@ export interface BlockData {
     | "linkedin"
     | "youtube"
     | "spotify"
+    | "cal"
     | "generic";
   text?: string;
   location?: string;
@@ -27,9 +31,17 @@ export interface BlockData {
 export interface Block {
   id: string;
   type: BlockType;
-  x?: number;
-  y?: number;
+  // Base coordinates (acting as default/current)
+  x: number;
+  y: number;
   w: number;
   h: number;
+
+  // Separate states for responsive layouts
+  layouts?: {
+    desktop: { x: number; y: number; w: number; h: number };
+    mobile: { x: number; y: number; w: number; h: number };
+  };
+
   data: BlockData;
 }
