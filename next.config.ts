@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "www.google.com",
       },
+      {
+        protocol: "https",
+        hostname: "*.r2.dev", // Allow default Cloudflare R2 domains
+      },
+      {
+        protocol: "https",
+        hostname: "pub-*.r2.dev", // Specific public R2 buckets
+      },
     ],
   },
 };

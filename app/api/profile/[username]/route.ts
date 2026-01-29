@@ -24,7 +24,6 @@ export async function GET(
       bio: user.bio,
       avatar: user.avatar,
       blocks: user.blocks,
-      layouts: user.layouts,
       theme: user.theme,
     });
   } catch (error) {

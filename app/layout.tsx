@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs';
 import AuthSync from "@/components/auth/AuthSync";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SmoothScroll } from "@/components/SmoothScroll";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -38,8 +39,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <AuthSync />
-            {children}
+            <SmoothScroll>
+              <AuthSync />
+              {children}
+            </SmoothScroll>
           </ThemeProvider>
         </body>
       </html>

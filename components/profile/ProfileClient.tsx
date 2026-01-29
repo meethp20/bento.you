@@ -250,11 +250,11 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
     };
 
     return (
-        <div className="fixed inset-0 w-full h-full bg-transparent transition-colors duration-500 overflow-hidden">
+        <div className="min-h-screen w-full bg-transparent transition-colors duration-500">
             <DynamicBackground theme={currentTheme} />
 
-            <div className="h-full w-full overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-12 px-4 sm:px-6 lg:px-8 pb-32">
-                <div className="relative z-10 font-[family-name:var(--font-sans)]">
+            <div className={`w-full py-12 px-4 sm:px-6 lg:px-8 pb-32 ${isPreviewMode ? 'h-screen flex items-center justify-center overflow-hidden fixed inset-0 z-40' : ''}`}>
+                <div className="relative z-10 font-[family-name:var(--font-sans)] w-full">
 
                     {/* Status Indicator */}
                     {isOwner && (
@@ -266,19 +266,23 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                     {/* Main Container with Shared Layout Animation */}
                     <div
                         className={`mx-auto transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isPreviewMode
-                            ? 'max-w-[460px] h-[800px] overflow-hidden bg-white dark:bg-zinc-950 rounded-[3.5rem] shadow-2xl border-[12px] border-zinc-900 ring-1 ring-zinc-900/5'
+                            ? 'w-[400px] h-[800px] overflow-hidden bg-white/50 dark:bg-zinc-950/50 rounded-3xl ring-1 ring-zinc-900/5 backdrop-blur-sm'
                             : 'max-w-7xl'
                             }`}
                     >
+
                         <div
-                            className={`h-full overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isPreviewMode ? 'p-6' : ''} transition-all duration-300 ${isTransitioning ? 'blur-md opacity-0 scale-95' : 'blur-0 opacity-100 scale-100'}`}
+                            className={`w-full ${isPreviewMode
+                                ? 'h-full overflow-y-auto scrollbar-hide pt-16 px-6 pb-8'
+                                : 'lg:flex lg:flex-row lg:items-start lg:gap-16 lg:px-4'
+                                } transition-all duration-300 ${isTransitioning ? 'blur-md opacity-0 scale-95' : 'blur-0 opacity-100 scale-100'}`}
                         >
 
                             <motion.div
                                 layout="position"
-                                className={`mb-12 ${isPreviewMode ? 'pt-8 origin-top' : ''}`}
+                                className={`mb-12 ${isPreviewMode ? 'origin-top' : 'lg:w-[350px] lg:shrink-0 lg:sticky lg:top-24 lg:mb-0'}`}
                             >
-                                <div className={`flex flex-col items-center justify-center text-center gap-6`}>
+                                <div className={`flex flex-col items-center justify-center text-center gap-6 ${!isPreviewMode ? 'lg:items-start lg:text-left' : ''}`}>
                                     <div className="relative group/avatar">
                                         <div className="w-32 h-32 shrink-0 rounded-full overflow-hidden ring-4 ring-white dark:ring-zinc-800 shadow-2xl relative bg-zinc-100">
                                             <img
@@ -295,13 +299,13 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                         )}
                                     </div>
 
-                                    <div className="flex flex-col items-center">
+                                    <div className={`flex flex-col items-center ${!isPreviewMode ? 'lg:items-start' : ''}`}>
                                         <InlineTextEdit
                                             initialValue={username}
                                             onSave={setUsername}
                                             isEditable={isOwner}
                                             as="h1"
-                                            className={`font-extrabold text-zinc-900 dark:text-white tracking-tight mb-2 capitalize ${isPreviewMode ? 'text-3xl' : 'text-5xl'}`}
+                                            className={`font-extrabold text-zinc-900 dark:text-white tracking-tight mb-2 capitalize ${isPreviewMode ? 'text-3xl' : 'text-5xl lg:text-6xl'}`}
                                         />
 
                                         <InlineTextEdit
@@ -310,18 +314,20 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                             isEditable={isOwner}
                                             multiline
                                             as="p"
-                                            className={`text-zinc-500 dark:text-zinc-400 font-medium text-center ${isPreviewMode ? 'text-sm max-w-[250px]' : 'text-xl max-w-lg'}`}
+                                            className={`text-zinc-500 dark:text-zinc-400 font-medium ${isPreviewMode ? 'text-center text-sm max-w-[250px]' : 'text-center lg:text-left text-xl max-w-lg'}`}
                                         />
                                     </div>
                                 </div>
                             </motion.div>
 
-                            <Container
-                                blocks={blocks}
-                                isEditMode={isEditMode}
-                                onDeleteBlock={handleDeleteBlock}
-                                onLayoutChange={handleLayoutChange}
-                            />
+                            <div className={`${!isPreviewMode ? 'lg:flex-1 w-full min-w-0' : 'w-full'}`}>
+                                <Container
+                                    blocks={blocks}
+                                    isEditMode={isEditMode}
+                                    onDeleteBlock={handleDeleteBlock}
+                                    onLayoutChange={handleLayoutChange}
+                                />
+                            </div>
 
 
 
@@ -398,8 +404,8 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                         />
                     )}
 
-                    {/* Only show theme panel if owner */}
-                    {isOwner && (
+                    {/* Only show theme panel if owner and in edit mode */}
+                    {isOwner && isEditMode && (
                         <ThemePanel currentTheme={currentTheme} onThemeChange={handleThemeChange} />
                     )}
                 </div>
