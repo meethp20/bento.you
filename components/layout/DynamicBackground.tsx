@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { ThemeId } from '@/components/ui/ThemePanel';
+import { ThemeId } from '@/components/ui/SettingsMenu';
 
 interface DynamicBackgroundProps {
     theme: ThemeId;
@@ -17,15 +17,6 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ theme }) => {
     // Extended Theme Types
     const getThemeStyles = (t: ThemeId) => {
         switch (t) {
-            case 'tokyo-night':
-                return {
-                    bg: 'bg-zinc-950',
-                    orbs: [
-                        { color: 'bg-purple-500/20', size: 'w-[40vw] h-[40vw]', pos: '-top-[10%] -left-[10%]', delay: '0s' },
-                        { color: 'bg-indigo-500/20', size: 'w-[35vw] h-[35vw]', pos: 'top-[20%] -right-[10%]', delay: '2s' },
-                        { color: 'bg-blue-500/20', size: 'w-[45vw] h-[45vw]', pos: '-bottom-[10%] left-[20%]', delay: '4s' }
-                    ]
-                };
             case 'sunset-bliss':
                 return {
                     bg: 'bg-orange-50', // Light mode base
@@ -57,8 +48,14 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ theme }) => {
                 };
             case 'rainbow':
                 return {
-                    isSolid: true,
-                    className: 'bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-indigo-200 via-purple-200 to-pink-200 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950'
+                    bg: 'bg-white',
+                    darkBg: 'dark:bg-zinc-950',
+                    orbs: [
+                        { color: 'bg-rose-300/40 dark:bg-rose-600/20', size: 'w-[45vw] h-[45vw]', pos: 'top-[-10%] left-[-10%]', delay: '0s' },
+                        { color: 'bg-yellow-200/40 dark:bg-yellow-600/20', size: 'w-[40vw] h-[40vw]', pos: 'top-[30%] right-[-10%]', delay: '2s' },
+                        { color: 'bg-sky-300/40 dark:bg-sky-600/20', size: 'w-[50vw] h-[50vw]', pos: 'bottom-[-10%] left-[20%]', delay: '4s' },
+                        { color: 'bg-purple-300/40 dark:bg-purple-600/20', size: 'w-[35vw] h-[35vw]', pos: 'bottom-[20%] right-[20%]', delay: '1s' }
+                    ]
                 };
             case 'grid':
                 return {
@@ -95,7 +92,7 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ theme }) => {
     if (!mounted) return null;
 
     return (
-        <div className={`fixed inset-0 overflow-hidden pointer-events-none -z-50 transition-colors duration-700 ${style.bg} ${style.darkBg || ''}`}>
+        <div className={`fixed inset-0 overflow-hidden pointer-events-none -z-50 transition-colors duration-700 ${style.bg || ''} ${style.darkBg || ''}`}>
             {/* Mesh Gradient Orbs */}
             {!style.isSolid && style.orbs?.map((orb, i) => (
                 <div

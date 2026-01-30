@@ -1,12 +1,18 @@
 "use client";
 
+
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import Container from "@/components/layout/Container";
 import BottomToolbar from "@/components/ui/BottomToolbar";
 import { Block, BlockData, BlockType } from "@/core/types/block";
-import { ThemePanel, ThemeId } from "@/components/ui/ThemePanel";
+import { SettingsMenu, ThemeId } from "@/components/ui/SettingsMenu";
 import DynamicBackground from "@/components/layout/DynamicBackground";
+
 import { InlineTextEdit } from "@/components/ui/InlineTextEdit";
+import ImageCropper from "@/components/ui/ImageCropper";
 import { motion } from "framer-motion";
 
 interface ProfileClientProps {
@@ -16,6 +22,7 @@ interface ProfileClientProps {
         avatar: string;
         blocks: Block[];
         theme: string;
+        email?: string;
     };
 
     isOwner?: boolean; // If true, enable editing features
@@ -36,6 +43,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
     // Initialize state from props
     const [blocks, setBlocks] = useState<Block[]>(user.blocks || []);
     const initialLoad = useRef(true);
+    const router = useRouter();
 
     const handleTogglePreview = () => {
         setIsTransitioning(true);
@@ -53,11 +61,26 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
 
         setIsSaving(true);
         try {
-            await fetch('/api/profile', {
+            const res = await fetch('/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                if (res.status === 409) {
+                    toast.error("Username already taken");
+                    // Optionally revert username here if we had access to the previous state, 
+                    // but since this is auto-save, we at least warn the user.
+                } else {
+                    toast.error(errorData.error || "Failed to save changes");
+                }
+                throw new Error(errorData.error || "Failed to save");
+            }
+
+            // Success
+            // toast.success("Saved changes"); // Optional: noisy if auto-saving often
         } catch (error) {
             console.error("Failed to save profile", error);
         } finally {
@@ -90,6 +113,87 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
     const handleThemeChange = (newTheme: ThemeId) => {
         setCurrentTheme(newTheme);
     };
+
+    // Toggle dark mode class based on theme
+    useEffect(() => {
+        const darkThemes: ThemeId[] = ['stars'];
+        const isDark = darkThemes.includes(currentTheme);
+
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [currentTheme]);
+
+
+    const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobileDevice(window.innerWidth < 768);
+        };
+        // Initial check
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Specific handler for settings menu username change
+    const handleUsernameChange = async (newVal: string): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: newVal })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                toast.error(data.error || "Failed to update username");
+                return false;
+            }
+
+            setUsername(newVal); // Update local state on success
+
+            // Redirect to new username URL
+            router.push(`/${newVal}`);
+
+            return true;
+        } catch (error) {
+            console.error(error);
+            toast.error("Network error");
+            return false;
+        }
+    };
+
+    // Specific handler for settings menu bio change
+    const handleBioChange = async (newVal: string): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bio: newVal })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                toast.error(data.error || "Failed to update bio");
+                return false;
+            }
+
+            setBio(newVal); // Update local state on success
+            return true;
+        } catch (error) {
+            console.error(error);
+            toast.error("Network error");
+            return false;
+        }
+    };
+
+
 
     const detectBlockFromUrl = (url: string): { type: BlockType; data: BlockData; w: number; h: number } => {
         const lowerUrl = url.toLowerCase();
@@ -237,11 +341,10 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
         setBlocks(newBlocks);
     }
 
-    // Upload Helper
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'block') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const [cropImage, setCropImage] = useState<string | null>(null);
 
+    // Upload Logic Extracted
+    const uploadFile = async (file: File | Blob, type: 'avatar' | 'block') => {
         setIsSaving(true);
         const formData = new FormData();
         formData.append('file', file);
@@ -274,6 +377,32 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Upload Helper - Entry Point
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'block') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // If it's an avatar, open cropper first
+        if (type === 'avatar') {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setCropImage(reader.result as string);
+                // Clear input so same file can be selected again if cancelled
+                e.target.value = '';
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        // Direct upload for blocks
+        await uploadFile(file, type);
+    };
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        setCropImage(null);
+        await uploadFile(croppedBlob, 'avatar');
     };
 
     // Dedicated handler for BottomToolbar direct file uploads
@@ -317,7 +446,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                     {/* Main Container with Shared Layout Animation */}
                     <div
                         className={`mx-auto ${isPreviewMode
-                            ? 'w-[400px] h-[800px] overflow-hidden bg-white/50 dark:bg-zinc-950/50 rounded-3xl ring-1 ring-zinc-900/5 backdrop-blur-sm'
+                            ? 'w-[440px] h-[800px] overflow-hidden bg-white/50 dark:bg-zinc-950/50 rounded-3xl ring-1 ring-zinc-900/5 backdrop-blur-sm'
                             : 'w-full max-w-[1800px]'
                             }`}
                     >
@@ -344,7 +473,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                             />
                                         </div>
                                         {isOwner && isEditMode && (
-                                            <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer rounded-full">
+                                            <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer rounded-full z-20">
                                                 <span className="text-white text-xs font-bold">Change</span>
                                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
                                             </label>
@@ -355,7 +484,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                         <InlineTextEdit
                                             initialValue={username}
                                             onSave={setUsername}
-                                            isEditable={isOwner}
+                                            isEditable={false}
                                             as="h1"
                                             className={`font-extrabold text-zinc-900 dark:text-white tracking-tight mb-1 capitalize truncate w-full ${isPreviewMode ? 'text-3xl' : 'text-4xl lg:text-5xl'}`}
                                         />
@@ -363,7 +492,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                         <InlineTextEdit
                                             initialValue={bio}
                                             onSave={setBio}
-                                            isEditable={isOwner}
+                                            isEditable={false}
                                             multiline
                                             as="p"
                                             className={`text-zinc-500 dark:text-zinc-400 font-medium ${isPreviewMode ? 'text-center text-sm max-w-[250px]' : 'text-center lg:text-left text-lg leading-relaxed'}`}
@@ -460,13 +589,46 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                 avatar,
                                 bio
                             }}
+                            isMobileDevice={isMobileDevice}
                         />
                     )}
 
-                    {/* Only show theme panel if owner and in edit mode */}
-                    {isOwner && isEditMode && (
-                        <ThemePanel currentTheme={currentTheme} onThemeChange={handleThemeChange} />
+                    {/* Settings Button & Menu (Only for Owner) */}
+                    {isOwner && (
+                        <>
+                            <div className="fixed bottom-8 left-8 z-50">
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className="group relative p-3 bg-white dark:bg-zinc-900 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-all hover:scale-110 active:scale-95"
+                                    title="Settings"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></svg>
+                                </button>
+                            </div>
+
+                            <SettingsMenu
+                                isOpen={isSettingsOpen}
+                                onClose={() => setIsSettingsOpen(false)}
+                                currentTheme={currentTheme}
+                                onThemeChange={handleThemeChange}
+                                username={username}
+                                onUsernameChange={handleUsernameChange}
+                                bio={bio}
+                                onBioChange={handleBioChange}
+                                email={user.email}
+                            />
+                        </>
                     )}
+
+                    {/* Image Cropper Overlay */}
+                    {cropImage && (
+                        <ImageCropper
+                            imageSrc={cropImage}
+                            onCrop={handleCropComplete}
+                            onCancel={() => setCropImage(null)}
+                        />
+                    )}
+
                 </div>
             </div>
         </div>

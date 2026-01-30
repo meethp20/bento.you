@@ -153,21 +153,34 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
     }, [blocks, onLayoutChange]); // Removed currentBreakpoint dependency entirely as we use ref
 
     const handleResize = (id: string, w: number, h: number) => {
-        // When manually resizing via buttons, we update BOTH layouts for simplicity unless we know context.
-        // For now, let's update both but clamp mobile width.
+        // Only update the layout for the CURRENT breakpoint
+        const isMobile = ['xs', 'xxs', 'sm'].includes(currentBreakpoint);
+
         const newBlocks = blocks.map(block => {
             if (block.id === id) {
                 const currentDesktop = block.layouts?.desktop || { x: block.x, y: block.y, w: block.w, h: block.h };
                 const currentMobile = block.layouts?.mobile || { x: 0, y: 0, w: Math.min(block.w, 2), h: block.h };
 
-                return {
-                    ...block,
-                    w, h,
-                    layouts: {
-                        desktop: { ...currentDesktop, w, h },
-                        mobile: { ...currentMobile, w: Math.min(w, 2), h }
-                    }
-                };
+                if (isMobile) {
+                    // Only update mobile layout
+                    return {
+                        ...block,
+                        layouts: {
+                            desktop: currentDesktop, // Keep desktop unchanged
+                            mobile: { ...currentMobile, w: Math.min(w, 2), h } // Update mobile only
+                        }
+                    };
+                } else {
+                    // Only update desktop layout
+                    return {
+                        ...block,
+                        w, h, // Update top-level for desktop consistency
+                        layouts: {
+                            desktop: { ...currentDesktop, w, h }, // Update desktop only
+                            mobile: currentMobile // Keep mobile unchanged
+                        }
+                    };
+                }
             }
             return block;
         });
@@ -249,29 +262,46 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
                     let velocity = 0;
                     let container: Element | Window | null = null;
 
-                    // 1. Desktop / Window Scroll
-                    if (window.innerWidth >= 1024) {
-                        container = window;
-                        if (clientY < EDGE_THRESHOLD) {
-                            velocity = -MAX_SPEED;
-                        } else if (window.innerHeight - clientY < EDGE_THRESHOLD) {
-                            velocity = MAX_SPEED;
-                        }
-                    } else {
-                        // 2. Mobile Preview Scroll
-                        const target = e.target as HTMLElement;
-                        const scrollContainer = target.closest('[data-lenis-prevent]');
+                    const target = e.target as HTMLElement;
+                    // Find the scrollable container wrapper
+                    const scrollWrapper = target.closest('[data-lenis-prevent]');
 
-                        if (scrollContainer) {
-                            container = scrollContainer;
-                            const rect = scrollContainer.getBoundingClientRect();
+                    let useWindowScroll = true;
+
+                    if (scrollWrapper) {
+                        const style = window.getComputedStyle(scrollWrapper);
+                        // interactive preview mode uses overflow-y: auto/scroll
+                        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                            useWindowScroll = false;
+                            container = scrollWrapper;
+
+                            const rect = scrollWrapper.getBoundingClientRect();
                             const relativeY = clientY - rect.top;
 
-                            if (relativeY < EDGE_THRESHOLD) {
-                                velocity = -MAX_SPEED;
-                            } else if (rect.bottom - clientY < EDGE_THRESHOLD) {
-                                velocity = MAX_SPEED;
+                            // Scroll down if near bottom
+                            if (rect.bottom - clientY < EDGE_THRESHOLD) {
+                                velocity = MAX_SPEED * ((EDGE_THRESHOLD - (rect.bottom - clientY)) / EDGE_THRESHOLD); // Smooth acceleration
+                                velocity = Math.max(velocity, 2); // Min speed
                             }
+                            // Scroll up if near top
+                            else if (relativeY < EDGE_THRESHOLD) {
+                                velocity = -(MAX_SPEED * ((EDGE_THRESHOLD - relativeY) / EDGE_THRESHOLD));
+                                velocity = Math.min(velocity, -2);
+                            }
+                        }
+                    }
+
+                    if (useWindowScroll) {
+                        container = window;
+                        // Scroll down if near bottom of window
+                        if (window.innerHeight - clientY < EDGE_THRESHOLD) {
+                            velocity = MAX_SPEED * ((EDGE_THRESHOLD - (window.innerHeight - clientY)) / EDGE_THRESHOLD);
+                            velocity = Math.max(velocity, 2);
+                        }
+                        // Scroll up if near top of window
+                        else if (clientY < EDGE_THRESHOLD) {
+                            velocity = -(MAX_SPEED * ((EDGE_THRESHOLD - clientY) / EDGE_THRESHOLD));
+                            velocity = Math.min(velocity, -2);
                         }
                     }
 
@@ -347,40 +377,53 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
                             {/* Resize Controls - Outside the drag handle */}
                             {isEditMode && (
                                 <div
-                                    className="absolute -bottom-12 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-black dark:bg-zinc-800 text-white px-2 py-1.5 rounded-full shadow-xl opacity-0 group-hover/container:opacity-100 transition-opacity duration-200 delay-300 group-hover/container:delay-0"
+                                    className="absolute -bottom-12 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-black/90 dark:bg-zinc-800/90 backdrop-blur-md text-white px-2 py-1.5 rounded-full shadow-2xl opacity-0 group-hover/container:opacity-100 transition-opacity duration-200 delay-300 group-hover/container:delay-0 border border-white/10"
                                     onMouseDown={(e) => e.stopPropagation()}
                                 >
                                     {/* 1x1 Small */}
                                     <button
                                         onClick={() => handleResize(block.id, 1, 1)}
-                                        className={`p-1.5 rounded-full hover:bg-white/20 transition-colors ${block.w === 1 && block.h === 1 ? 'bg-white/30' : ''}`}
+                                        className={`p-2 rounded-full hover:bg-white/20 transition-colors ${block.w === 1 && block.h === 1 ? 'bg-white/30 text-white' : 'text-white/70'}`}
                                         title="Small"
                                     >
-                                        <Square className="w-3 h-3" />
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                                        </svg>
                                     </button>
-                                    {/* 2x1 Horizontal */}
-                                    <button
-                                        onClick={() => handleResize(block.id, 2, 1)}
-                                        className={`p-1.5 rounded-full hover:bg-white/20 transition-colors ${block.w === 2 && block.h === 1 ? 'bg-white/30' : ''}`}
-                                        title="Wide"
-                                    >
-                                        <LayoutTemplate className="w-3 h-3 rotate-90" />
-                                    </button>
-                                    {/* 1x2 Vertical */}
+
+                                    {/* 2x1 Horizontal (Wide) */}
+                                    {!(block.type === 'social' && block.data.platform === 'github') && (
+                                        <button
+                                            onClick={() => handleResize(block.id, 2, 1)}
+                                            className={`p-2 rounded-full hover:bg-white/20 transition-colors ${block.w === 2 && block.h === 1 ? 'bg-white/30 text-white' : 'text-white/70'}`}
+                                            title="Wide"
+                                        >
+                                            <svg width="20" height="14" viewBox="0 0 20 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                <rect x="2" y="2" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {/* 1x2 Vertical (Tall) */}
                                     <button
                                         onClick={() => handleResize(block.id, 1, 2)}
-                                        className={`p-1.5 rounded-full hover:bg-white/20 transition-colors ${block.w === 1 && block.h === 2 ? 'bg-white/30' : ''}`}
+                                        className={`p-2 rounded-full hover:bg-white/20 transition-colors ${block.w === 1 && block.h === 2 ? 'bg-white/30 text-white' : 'text-white/70'}`}
                                         title="Tall"
                                     >
-                                        <LayoutTemplate className="w-3 h-3" />
+                                        <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="2" y="2" width="10" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                                        </svg>
                                     </button>
+
                                     {/* 2x2 Large */}
                                     <button
                                         onClick={() => handleResize(block.id, 2, 2)}
-                                        className={`p-1.5 rounded-full hover:bg-white/20 transition-colors ${block.w === 2 && block.h === 2 ? 'bg-white/30' : ''}`}
+                                        className={`p-2 rounded-full hover:bg-white/20 transition-colors ${block.w === 2 && block.h === 2 ? 'bg-white/30 text-white' : 'text-white/70'}`}
                                         title="Large"
                                     >
-                                        <LayoutGrid className="w-3 h-3" />
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                                        </svg>
                                     </button>
                                 </div>
                             )}

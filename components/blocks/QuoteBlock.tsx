@@ -19,7 +19,6 @@ const QuoteBlock: React.FC<QuoteBlockProps> = ({ block }) => {
                 </p>
             </div>
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0" />
                 <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{data.title || "Author Name"}</p>
                     <p className="text-xs text-zinc-500 truncate">Role / Title</p>

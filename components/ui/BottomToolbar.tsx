@@ -32,6 +32,7 @@ interface BottomToolbarProps {
         avatar?: string;
         bio?: string;
     };
+    isMobileDevice?: boolean;
 }
 
 const BottomToolbar: React.FC<BottomToolbarProps> = ({
@@ -44,7 +45,8 @@ const BottomToolbar: React.FC<BottomToolbarProps> = ({
     onToggleEditMode,
     onTogglePreview,
     isPreviewMode,
-    userInfo
+    userInfo,
+    isMobileDevice = false
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [activeTool, setActiveTool] = useState<'link' | 'text' | 'heading' | 'quote' | null>(null);
@@ -265,12 +267,14 @@ const BottomToolbar: React.FC<BottomToolbarProps> = ({
                         >
                             <Pen className="w-4 h-4" />
                         </button>
-                        <button
-                            onClick={onTogglePreview}
-                            className={`p-2 rounded-full transition-all ${isPreviewMode ? 'bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
-                        >
-                            <Smartphone className="w-4 h-4" />
-                        </button>
+                        {!isMobileDevice && (
+                            <button
+                                onClick={onTogglePreview}
+                                className={`p-2 rounded-full transition-all ${isPreviewMode ? 'bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+                            >
+                                <Smartphone className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

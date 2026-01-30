@@ -91,25 +91,31 @@ const SocialBlock: React.FC<SocialBlockProps> = ({ block }) => {
                 );
             }
 
-            if (isWide && !isLarge) {
+            // Large (2x2+) - Only show calendar card here
+            if (isLarge) {
                 return (
-                    <div className="w-full h-full flex flex-col justify-between p-4 bg-[#0d1117] relative overflow-hidden group">
-                        <div className="flex items-center gap-3 relative z-10">
-                            <Github className="w-6 h-6 text-white" />
-                            <div className="flex flex-col text-left">
-                                <span className="font-bold text-sm text-white leading-tight">@{githubUsername}</span>
-                                <span className="text-[10px] text-zinc-400">Last 3 Months</span>
+                    <div className="w-full h-full flex flex-col p-5 justify-between overflow-hidden relative group bg-[#0d1117]">
+                        {/* Background Glow */}
+                        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-zinc-800/20 rotate-45 pointer-events-none group-hover:bg-zinc-800/40 transition-colors" />
+
+                        <div className="flex items-center gap-3 mb-2 relative z-10">
+                            <div className="p-2 bg-white/5 rounded-full border border-white/5">
+                                <Github className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <span className="font-bold text-base text-white block">@{githubUsername}</span>
+                                <span className="text-xs text-zinc-500">Recent Contributions</span>
                             </div>
                         </div>
 
-                        <div className="relative z-10 w-full flex justify-start opacity-80 group-hover:opacity-100 transition-opacity mt-1">
+                        <div className="flex-1 w-full flex items-center justify-center relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
                             <GitHubCalendar
                                 username={githubUsername}
-                                transformData={(data: any[]) => selectLastNDays(data, 90)} // Last 3 months (approx)
-                                blockSize={9}
-                                blockMargin={2}
+                                transformData={(data: any[]) => selectLastNDays(data, 180)} // Last 6 months
+                                blockSize={14}
+                                blockMargin={4}
                                 colorScheme="dark"
-                                fontSize={10}
+                                fontSize={14}
                                 hideColorLegend
                                 hideMonthLabels
                                 hideTotalCount
@@ -120,44 +126,10 @@ const SocialBlock: React.FC<SocialBlockProps> = ({ block }) => {
                             />
                         </div>
                     </div>
-                );
+                )
             }
 
-            // Large (2x2+)
-            return (
-                <div className="w-full h-full flex flex-col p-5 justify-between overflow-hidden relative group bg-[#0d1117]">
-                    {/* Background Glow */}
-                    <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-zinc-800/20 rotate-45 pointer-events-none group-hover:bg-zinc-800/40 transition-colors" />
-
-                    <div className="flex items-center gap-3 mb-2 relative z-10">
-                        <div className="p-2 bg-white/5 rounded-full border border-white/5">
-                            <Github className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <span className="font-bold text-base text-white block">@{githubUsername}</span>
-                            <span className="text-xs text-zinc-500">Recent Contributions</span>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 w-full flex items-center justify-center relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
-                        <GitHubCalendar
-                            username={githubUsername}
-                            transformData={(data: any[]) => selectLastNDays(data, 180)} // Last 6 months
-                            blockSize={11}
-                            blockMargin={3}
-                            colorScheme="dark"
-                            fontSize={12}
-                            hideColorLegend
-                            hideMonthLabels
-                            hideTotalCount
-                            theme={{
-                                light: ['#1f2937', '#374151', '#4b5563', '#6b7280', '#9ca3af'],
-                                dark: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
-                            }}
-                        />
-                    </div>
-                </div>
-            )
+            // Fallthrough for Wide (will use generic renderer below)
         }
 
 

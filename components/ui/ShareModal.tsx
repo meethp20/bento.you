@@ -80,7 +80,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, usernam
                 </div>
 
                 {/* Preview Card */}
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 flex flex-col items-center justify-center text-center text-white shadow-lg group">
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 p-6 flex flex-col items-center justify-center text-center text-zinc-900 dark:text-white shadow-lg group">
 
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
 
@@ -93,8 +93,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, usernam
                             />
                         </div>
                         <div>
-                            <h4 className="font-bold text-xl drop-shadow-md">@{username}</h4>
-                            <p className="text-sm text-white/90 font-medium drop-shadow-sm max-w-[200px] truncate">
+                            <h4 className="font-bold text-xl">@{username}</h4>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium max-w-[200px] truncate">
                                 {bio || "Designer & Developer"}
                             </p>
                         </div>
@@ -112,14 +112,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, usernam
                     <div className="flex items-center gap-2 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                         <div className="flex-1 min-w-0 px-2">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate font-mono">
-                                {url.replace('https://', '')}
+                                {url.replace(/^https?:\/\//, '')}
                             </p>
                         </div>
                         <button
                             onClick={handleCopy}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${copied
-                                    ? 'bg-green-500 text-white shadow-md'
-                                    : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80'
+                                ? 'bg-green-500 text-white shadow-md'
+                                : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80'
                                 }`}
                         >
                             {copied ? 'Copied!' : 'Copy'}

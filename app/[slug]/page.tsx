@@ -30,6 +30,7 @@ export default async function UserBentoPage({ params }: { params: Promise<{ slug
         avatar: userDoc.avatar,
         blocks: userDoc.blocks || [],
         theme: userDoc.theme || 'hero',
+        email: userDoc.email,
         // We generally don't need the full object, just what the UI needs
     };
 
