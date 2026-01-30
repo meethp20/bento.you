@@ -222,6 +222,12 @@ export default function LandingPage() {
             </p>
           </div>
 
+          <div className="text-center mb-8 -mt-10">
+            <span className="text-zinc-400/50 text-sm font-medium tracking-widest uppercase animate-pulse select-none">
+              Try dragging and dropping
+            </span>
+          </div>
+
           <LandingGrid />
         </section>
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Layout, Sparkles } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 export default function Home() {
     const { user, isLoaded } = useUser();
@@ -16,10 +17,14 @@ export default function Home() {
 
     // Pre-fill if user already has data (Optional, good for UX)
     useEffect(() => {
-        if (isLoaded && user) {
-            // We could fetch existing profile here if we wanted to allow editing
+        if (isLoaded) {
+            if (!user) {
+                router.push("/"); // Redirect if not signed in
+            } else {
+                // We could fetch existing profile here if we wanted to allow editing
+            }
         }
-    }, [isLoaded, user]);
+    }, [isLoaded, user, router]);
 
     const [isUploading, setIsUploading] = useState(false);
 
@@ -51,9 +56,9 @@ export default function Home() {
             setAvatar(data.url); // Replace blob with real URL
         } catch (err: any) {
             console.error(err);
-            setError("Failed to upload image. Please try again.");
-            // Revert preview? or just leave it and let user try saving? 
-            // Better to warn them.
+            const msg = "Failed to upload image. Please try again.";
+            setError(msg);
+            toast.error(msg);
         } finally {
             setIsUploading(false);
         }
@@ -87,6 +92,7 @@ export default function Home() {
                 router.push(`/${cleanUsername}`);
             } catch (err: any) {
                 setError(err.message);
+                toast.error(err.message);
             } finally {
                 setIsSubmitting(false);
             }

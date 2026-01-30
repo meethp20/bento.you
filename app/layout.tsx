@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import AuthSync from "@/components/auth/AuthSync";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { Toaster } from "@/components/ui/sonner";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -43,6 +44,7 @@ export default function RootLayout({
             <SmoothScroll>
               <AuthSync />
               {children}
+              <Toaster position="top-center" richColors />
             </SmoothScroll>
           </ThemeProvider>
         </body>
