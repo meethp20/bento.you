@@ -6,31 +6,49 @@ import ImageBlock from '@/components/blocks/ImageBlock';
 import TextBlock from '@/components/blocks/TextBlock';
 import HeadingBlock from '@/components/blocks/HeadingBlock';
 import MapBlock from '@/components/blocks/MapBlock';
+import { Tilt } from '@/components/ui/Tilt';
 interface BlockRendererProps {
     block: Block;
     onAddClick?: () => void;
 }
 
 const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAddClick }) => {
-    switch (block.type) {
-        case 'social':
-            return <SocialBlock block={block} />;
-        case 'image':
-            return <ImageBlock block={block} />;
-        case 'text':
-            return <TextBlock block={block} />;
-        case 'heading':
-            return <HeadingBlock block={block} />;
-        case 'map':
-            return <MapBlock block={block} />;
 
-        default:
-            return (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-2xl">
-                    Unknown Block
-                </div>
-            );
+    // We can conditionally disable tilt for certain blocks if needed (e.g. map), but for now appy to all
+    // Map blocks might capture mouse events so tilt could be annoying, but let's try.
+    const isMap = block.type === 'map';
+
+    const renderContent = () => {
+        switch (block.type) {
+            case 'social':
+                return <SocialBlock block={block} />;
+            case 'image':
+                return <ImageBlock block={block} />;
+            case 'text':
+                return <TextBlock block={block} />;
+            case 'heading':
+                return <HeadingBlock block={block} />;
+            case 'map':
+                return <MapBlock block={block} />;
+
+            default:
+                return (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-2xl">
+                        Unknown Block
+                    </div>
+                );
+        }
+    };
+
+    if (isMap) {
+        return renderContent();
     }
+
+    return (
+        <Tilt className="w-full h-full" options={{ scale: 1.02, max: 12, speed: 800, glare: true, "max-glare": 0.15 }}>
+            {renderContent()}
+        </Tilt>
+    );
 }
 
 // Memoize to prevent re-renders when parent layout changes (if props are stable)

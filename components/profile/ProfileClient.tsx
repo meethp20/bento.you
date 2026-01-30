@@ -172,14 +172,42 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
         return { type, data, w, h };
     };
 
-    const handleAddLink = (url: string) => {
+    const handleAddLink = (url: string, forcedType?: BlockType) => {
         try {
             if (!url.startsWith('blob:') && !url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
 
-            const { type, data, w, h } = detectBlockFromUrl(url);
-            const maxY = blocks.reduce((max, b) => Math.max(max, (b.y || 0) + b.h), 0);
+            let { type, data, w, h } = detectBlockFromUrl(url);
+
+            // Override if type is forced (e.g. from upload)
+            if (forcedType) {
+                type = forcedType;
+                if (type === 'image') {
+                    // Ensure data has the correct image properties
+                    data = { ...data, imageUrl: url, title: 'Image' };
+                    w = 2; h = 2;
+                }
+            }
+
+            // Calculate Max Y for Desktop
+            const desktopMaxY = blocks.reduce((max, b) => {
+                const layout = b.layouts?.desktop || { y: b.y || 0, h: b.h || 1 };
+                return Math.max(max, layout.y + layout.h);
+            }, 0);
+
+            // Calculate Max Y for Mobile
+            const mobileMaxY = blocks.reduce((max, b) => {
+                const layout = b.layouts?.mobile || { y: 0, h: b.h || 1 }; // Fallback to 0 if no mobile layout yet
+                // Use a larger fallback logic if mobile layout is missing? 
+                // Actually, if it's missing, '0' is risky, but usually blocks have layouts. 
+                // If they don't, using desktop Y might be the only choice, but let's try to trust the mobile prop if it exists.
+                return Math.max(max, layout.y + layout.h);
+            }, 0);
+
+            // Determine safe insertion points (prevent overlap)
+            // If mobileMaxY is smaller than desktopMaxY (unlikely but possible), let's ensure we at least start at the bottom of the grid.
+            // Using the specific maxY for each layout ensures it goes to the bottom of THAT specific view.
 
             const newBlock: Block = {
                 id: `block-${Date.now()}`,
@@ -187,12 +215,11 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                 w,
                 h,
                 x: 0,
-                y: maxY,
+                y: desktopMaxY, // Default root Y follows desktop
                 data,
-                // Initialize layouts
                 layouts: {
-                    desktop: { x: 0, y: maxY, w, h },
-                    mobile: { x: 0, y: maxY, w: Math.min(w, 2), h }
+                    desktop: { x: 0, y: desktopMaxY, w, h },
+                    mobile: { x: 0, y: mobileMaxY, w: Math.min(w, 2), h }
                 }
             };
 
@@ -238,12 +265,36 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                     }
                     setAvatar(data.url);
                 } else {
-                    handleAddLink(data.url);
+                    handleAddLink(data.url, 'image');
                 }
             }
         } catch (error) {
             console.error("Upload failed", error);
             // Optionally show error toast
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Dedicated handler for BottomToolbar direct file uploads
+    const handleBlockUpload = async (file: File) => {
+        setIsSaving(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.url) {
+                // Ensure it's added as an IMAGE block
+                handleAddLink(data.url, 'image');
+            }
+        } catch (error) {
+            console.error("Block upload failed", error);
         } finally {
             setIsSaving(false);
         }
@@ -267,24 +318,25 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                     <div
                         className={`mx-auto transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isPreviewMode
                             ? 'w-[400px] h-[800px] overflow-hidden bg-white/50 dark:bg-zinc-950/50 rounded-3xl ring-1 ring-zinc-900/5 backdrop-blur-sm'
-                            : 'max-w-7xl'
+                            : 'w-full max-w-[1800px]'
                             }`}
                     >
 
                         <div
+                            data-lenis-prevent
                             className={`w-full ${isPreviewMode
-                                ? 'h-full overflow-y-auto scrollbar-hide pt-16 px-6 pb-8'
-                                : 'lg:flex lg:flex-row lg:items-start lg:gap-16 lg:px-4'
+                                ? 'h-full overflow-y-auto pt-16 px-6 pb-32 pr-2 scrollbar-hide overscroll-contain relative z-10'
+                                : 'lg:flex lg:flex-row lg:items-start lg:gap-12 lg:px-4'
                                 } transition-all duration-300 ${isTransitioning ? 'blur-md opacity-0 scale-95' : 'blur-0 opacity-100 scale-100'}`}
                         >
 
                             <motion.div
                                 layout="position"
-                                className={`mb-12 ${isPreviewMode ? 'origin-top' : 'lg:w-[350px] lg:shrink-0 lg:sticky lg:top-24 lg:mb-0'}`}
+                                className={`mb-12 ${isPreviewMode ? 'origin-top' : 'lg:w-[480px] lg:shrink-0 lg:sticky lg:top-48 lg:mt-20 lg:mb-0'}`}
                             >
-                                <div className={`flex flex-col items-center justify-center text-center gap-6 ${!isPreviewMode ? 'lg:items-start lg:text-left' : ''}`}>
-                                    <div className="relative group/avatar">
-                                        <div className="w-32 h-32 shrink-0 rounded-full overflow-hidden ring-4 ring-white dark:ring-zinc-800 shadow-2xl relative bg-zinc-100">
+                                <div className={`flex flex-col items-center justify-center text-center gap-6 ${!isPreviewMode ? 'lg:flex-row lg:items-center lg:text-left' : ''}`}>
+                                    <div className="relative group/avatar shrink-0">
+                                        <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white dark:ring-zinc-800 shadow-2xl relative bg-zinc-100">
                                             <img
                                                 src={avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop"}
                                                 alt={username}
@@ -299,13 +351,13 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                         )}
                                     </div>
 
-                                    <div className={`flex flex-col items-center ${!isPreviewMode ? 'lg:items-start' : ''}`}>
+                                    <div className={`flex flex-col items-center flex-1 min-w-0 ${!isPreviewMode ? 'lg:items-start' : ''}`}>
                                         <InlineTextEdit
                                             initialValue={username}
                                             onSave={setUsername}
                                             isEditable={isOwner}
                                             as="h1"
-                                            className={`font-extrabold text-zinc-900 dark:text-white tracking-tight mb-2 capitalize ${isPreviewMode ? 'text-3xl' : 'text-5xl lg:text-6xl'}`}
+                                            className={`font-extrabold text-zinc-900 dark:text-white tracking-tight mb-1 capitalize truncate w-full ${isPreviewMode ? 'text-3xl' : 'text-4xl lg:text-5xl'}`}
                                         />
 
                                         <InlineTextEdit
@@ -314,7 +366,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                                             isEditable={isOwner}
                                             multiline
                                             as="p"
-                                            className={`text-zinc-500 dark:text-zinc-400 font-medium ${isPreviewMode ? 'text-center text-sm max-w-[250px]' : 'text-center lg:text-left text-xl max-w-lg'}`}
+                                            className={`text-zinc-500 dark:text-zinc-400 font-medium ${isPreviewMode ? 'text-center text-sm max-w-[250px]' : 'text-center lg:text-left text-lg leading-relaxed'}`}
                                         />
                                     </div>
                                 </div>
@@ -322,6 +374,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
 
                             <div className={`${!isPreviewMode ? 'lg:flex-1 w-full min-w-0' : 'w-full'}`}>
                                 <Container
+                                    key={isPreviewMode ? 'mobile-view' : 'desktop-view'}
                                     blocks={blocks}
                                     isEditMode={isEditMode}
                                     onDeleteBlock={handleDeleteBlock}
@@ -337,6 +390,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                     {/* Only show toolbar if owner (editing allowed) */}
                     {isOwner && (
                         <BottomToolbar
+                            onUpload={handleBlockUpload}
                             onAddLink={handleAddLink}
                             onAddText={(text, title) => {
                                 const maxY = blocks.reduce((max, b) => Math.max(max, (b.y || 0) + b.h), 0);
@@ -401,6 +455,11 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
                             onToggleEditMode={() => setIsEditMode(!isEditMode)}
                             onTogglePreview={handleTogglePreview}
                             isPreviewMode={isPreviewMode}
+                            userInfo={{
+                                username,
+                                avatar,
+                                bio
+                            }}
                         />
                     )}
 

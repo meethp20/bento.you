@@ -189,7 +189,7 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
     };
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4 md:p-8 mb-32">
+        <div className="w-full mx-auto p-4 md:p-8 mb-32">
             <ResponsiveGridLayout
                 className="layout"
                 layouts={layouts}
