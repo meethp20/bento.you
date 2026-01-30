@@ -316,7 +316,7 @@ export default function ProfileClient({ user, isOwner = false }: ProfileClientPr
 
                     {/* Main Container with Shared Layout Animation */}
                     <div
-                        className={`mx-auto transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isPreviewMode
+                        className={`mx-auto ${isPreviewMode
                             ? 'w-[400px] h-[800px] overflow-hidden bg-white/50 dark:bg-zinc-950/50 rounded-3xl ring-1 ring-zinc-900/5 backdrop-blur-sm'
                             : 'w-full max-w-[1800px]'
                             }`}

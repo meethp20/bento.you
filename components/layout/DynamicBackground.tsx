@@ -60,6 +60,25 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ theme }) => {
                     isSolid: true,
                     className: 'bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-indigo-200 via-purple-200 to-pink-200 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950'
                 };
+            case 'grid':
+                return {
+                    isSolid: true,
+                    className: 'bg-white dark:bg-zinc-950 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]'
+                };
+            case 'stars':
+                return {
+                    isSolid: true,
+                    className: 'bg-black text-white relative overflow-hidden',
+                    // Simulate stars with multiple box-shadow layers or gradients. 
+                    // Using a simpler approach for now with a custom star pattern CSS class or inline style if needed.
+                    // But here I'll use a radial gradient pattern for simplicity and performance.
+                    children: (
+                        <>
+                            <div className="absolute inset-0 bg-[radial-gradient(white,rgba(255,255,255,.2)_2px,transparent_3px)] bg-[size:50px_50px] opacity-20 animate-[pulse_4s_infinite]"></div>
+                            <div className="absolute inset-0 bg-[radial-gradient(white,rgba(255,255,255,.15)_1px,transparent_2px)] bg-[size:30px_30px] opacity-10 top-10 left-10"></div>
+                        </>
+                    )
+                };
             default:
                 return {
                     bg: 'bg-zinc-50',
@@ -93,7 +112,9 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ theme }) => {
             <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
 
             {style.isSolid && (
-                <div className={`absolute inset-0 ${style.className}`} />
+                <div className={`absolute inset-0 ${style.className}`}>
+                    {(style as any).children}
+                </div>
             )}
         </div>
     );

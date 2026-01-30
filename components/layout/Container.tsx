@@ -54,9 +54,10 @@ interface ContainerProps {
     isEditMode: boolean;
     onDeleteBlock: (id: string) => void;
     onLayoutChange: (blocks: Block[]) => void;
+    isLandingPage?: boolean;
 }
 
-const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock, onLayoutChange }) => {
+const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock, onLayoutChange, isLandingPage = false }) => {
     const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg');
     const currentBreakpointRef = React.useRef<string>('lg');
 
@@ -181,11 +182,42 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
         blocks.forEach(b => renderedBlocksRef.current.add(b.id));
     }, [blocks]);
 
+    // Auto-scroll refs
+    const scrollIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+    const scrollVelocityRef = React.useRef<number>(0);
+    const scrollContainerRef = React.useRef<Element | Window | null>(null);
+
     // Haptic feedback helper
     const vibrate = () => {
         if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
             window.navigator.vibrate(10);
         }
+    };
+
+    const stopAutoScroll = () => {
+        if (scrollIntervalRef.current) {
+            clearInterval(scrollIntervalRef.current);
+            scrollIntervalRef.current = null;
+        }
+        scrollVelocityRef.current = 0;
+        scrollContainerRef.current = null;
+    };
+
+    const startAutoScroll = () => {
+        if (scrollIntervalRef.current) return;
+
+        scrollIntervalRef.current = setInterval(() => {
+            const velocity = scrollVelocityRef.current;
+            const container = scrollContainerRef.current;
+
+            if (velocity === 0 || !container) return;
+
+            if (container instanceof Window) {
+                container.scrollBy(0, velocity);
+            } else {
+                (container as Element).scrollTop += velocity;
+            }
+        }, 16); // ~60fps
     };
 
     return (
@@ -203,7 +235,55 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
                 onLayoutChange={handleLayoutChange}
                 onBreakpointChange={handleBreakpointChange}
                 onDragStart={vibrate}
-                onDragStop={vibrate}
+                onDragStop={() => {
+                    vibrate();
+                    stopAutoScroll();
+                }}
+                onDrag={(_layout: RGLLayoutItem[], _oldItem: RGLLayoutItem, _newItem: RGLLayoutItem, _placeholder: RGLLayoutItem, e: MouseEvent, _element: HTMLElement) => {
+                    if (!e) return;
+
+                    const EDGE_THRESHOLD = 200;
+                    const MAX_SPEED = 20; // Max pixels per frame
+                    const clientY = e.clientY;
+
+                    let velocity = 0;
+                    let container: Element | Window | null = null;
+
+                    // 1. Desktop / Window Scroll
+                    if (window.innerWidth >= 1024) {
+                        container = window;
+                        if (clientY < EDGE_THRESHOLD) {
+                            velocity = -MAX_SPEED;
+                        } else if (window.innerHeight - clientY < EDGE_THRESHOLD) {
+                            velocity = MAX_SPEED;
+                        }
+                    } else {
+                        // 2. Mobile Preview Scroll
+                        const target = e.target as HTMLElement;
+                        const scrollContainer = target.closest('[data-lenis-prevent]');
+
+                        if (scrollContainer) {
+                            container = scrollContainer;
+                            const rect = scrollContainer.getBoundingClientRect();
+                            const relativeY = clientY - rect.top;
+
+                            if (relativeY < EDGE_THRESHOLD) {
+                                velocity = -MAX_SPEED;
+                            } else if (rect.bottom - clientY < EDGE_THRESHOLD) {
+                                velocity = MAX_SPEED;
+                            }
+                        }
+                    }
+
+                    // Update refs
+                    if (velocity !== 0) {
+                        scrollVelocityRef.current = velocity;
+                        scrollContainerRef.current = container;
+                        startAutoScroll();
+                    } else {
+                        stopAutoScroll();
+                    }
+                }}
                 useCSSTransforms={true}
                 compactType="vertical"
                 preventCollision={false}
@@ -218,7 +298,7 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
                         <div key={block.id} className={`relative group/container bg-transparent !overflow-visible hover:z-50 transition-none`}>
 
                             {/* Collision/Placement Indicator (Active only when dragging ideally, but simple dash border acts as one too) */}
-                            {isEditMode && (
+                            {isEditMode && !isLandingPage && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -244,13 +324,13 @@ const Container: React.FC<ContainerProps> = ({ blocks, isEditMode, onDeleteBlock
                                 {/* Subtle rainbow glow effect behind the bento grid blocks */}
                                 <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-[2rem] blur opacity-25 group-hover/container:opacity-60 transition duration-500 pointer-events-none -z-10"></div>
 
-                                <div className={`w-full h-full transition-all duration-300 ${isEditMode ? 'opacity-90 scale-[0.98]' : ''} bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden select-none`}>
+                                <div className={`w-full h-full transition-all duration-300 ${isEditMode && !isLandingPage ? 'opacity-90 scale-[0.98]' : ''} bg-white dark:bg-zinc-900 rounded-3xl shadow-sm overflow-hidden select-none`}>
                                     <BlockRenderer block={block} />
                                 </div>
                             </motion.div>
 
                             {/* Delete Button - Outside the drag handle for separate clicking */}
-                            {isEditMode && (
+                            {isEditMode && !isLandingPage && (
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();

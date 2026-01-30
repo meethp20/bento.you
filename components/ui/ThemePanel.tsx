@@ -5,7 +5,7 @@ import { Palette, X } from 'lucide-react';
 import { AnimatedThemeToggler } from './animated-theme-toggler';
 import { cn } from '@/lib/utils';
 
-export type ThemeId = 'tokyo-night' | 'sunset-bliss' | 'ocean-breeze' | 'forest-zen' | 'rainbow';
+export type ThemeId = 'tokyo-night' | 'sunset-bliss' | 'ocean-breeze' | 'forest-zen' | 'rainbow' | 'grid' | 'stars';
 
 export const THEMES: { id: ThemeId; name: string; color: string; textColor?: string }[] = [
     { id: 'tokyo-night', name: 'Tokyo Night', color: '#7e22ce' }, // Purple
@@ -13,6 +13,7 @@ export const THEMES: { id: ThemeId; name: string; color: string; textColor?: str
     { id: 'ocean-breeze', name: 'Ocean Breeze', color: '#06b6d4' }, // Cyan
     { id: 'forest-zen', name: 'Forest Zen', color: '#10b981' }, // Emerald
     { id: 'rainbow', name: 'Rainbow', color: 'conic-gradient(at top left, #c7d2fe, #e9d5ff, #fbcfe8)' }, // Soft Rainbow Gradient
+    { id: 'grid', name: 'Geometric Grid', color: '#e4e4e7' }, // Zinc
 ];
 
 interface ThemePanelProps {
@@ -24,7 +25,7 @@ export const ThemePanel: React.FC<ThemePanelProps> = ({ currentTheme, onThemeCha
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="fixed bottom-8 left-8 z-50 flex flex-col-reverse items-start gap-4">
+        <div className="fixed top-4 right-4 lg:top-auto lg:right-auto lg:bottom-8 lg:left-8 z-50 flex flex-col items-end lg:flex-col-reverse lg:items-start gap-4">
 
             <div className="flex items-center gap-3">
                 {/* Theme Toggle Button */}
@@ -44,7 +45,7 @@ export const ThemePanel: React.FC<ThemePanelProps> = ({ currentTheme, onThemeCha
 
                     {/* Popover */}
                     <div className={cn(
-                        "absolute bottom-full left-0 mb-4 p-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 flex flex-col gap-3 transition-all duration-300 origin-bottom-left min-w-[200px]",
+                        "absolute right-0 top-full mt-4 lg:right-auto lg:top-auto lg:bottom-full lg:left-0 lg:mb-4 p-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl shadow-2xl border border-zinc-200/50 dark:border-zinc-800/50 flex flex-col gap-3 transition-all duration-300 origin-top-right lg:origin-bottom-left min-w-[200px]",
                         isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4 pointer-events-none"
                     )}>
                         <div className="flex items-center justify-between px-2 pt-1">
@@ -81,8 +82,6 @@ export const ThemePanel: React.FC<ThemePanelProps> = ({ currentTheme, onThemeCha
                     </div>
                 </div>
 
-                {/* Dark Mode Toggle */}
-                <AnimatedThemeToggler className="p-3 bg-white dark:bg-zinc-900 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white hover:scale-105 transition-transform active:scale-95" />
             </div>
         </div>
     );
